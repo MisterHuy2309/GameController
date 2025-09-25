@@ -1,0 +1,47 @@
+transform: [{ translateX: -40 }], // dịch lên trên 40px
+
+
+/////////// Python////
+
+Server Original
+
+import asyncio
+import websockets
+from websockets.protocol import State
+
+connected_client = None  # chỉ 1 client
+
+async def game_server(ws):
+    global connected_client
+
+    # Kiểm tra client còn open hay không
+    if connected_client and connected_client.state == State.OPEN:
+        await ws.send("Server chỉ cho phép 1 client thôi!")
+        await ws.close()
+        return
+
+    connected_client = ws
+    print("Client connected:", ws.remote_address)
+
+    try:
+        async for message in ws:
+            print("Received:", message)
+            await ws.send(f"Server received: {message}")
+    except websockets.exceptions.ConnectionClosedOK:
+        pass
+    except websockets.exceptions.ConnectionClosedError:
+        pass
+    finally:
+        print("Client disconnected:", ws.remote_address)
+        connected_client = None
+
+async def main():
+    async with websockets.serve(game_server, "0.0.0.0", 8765):
+        print("Caro WebSocket server running on port 8765 (1 client only)")
+        await asyncio.Future()  # chạy vô hạn
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+////
+
